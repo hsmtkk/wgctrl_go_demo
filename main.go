@@ -16,8 +16,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer clt.Close()
+
 	listDevices(clt)
 	configureDevice(clt, "wg0")
+	listDevices(clt)
 }
 
 func listDevices(clt *wgctrl.Client) {
@@ -61,12 +64,8 @@ func configureDevice(clt *wgctrl.Client, name string) {
 	allowedIPs := []net.IPNet{*subnet}
 	peer := wgtypes.PeerConfig{
 		PublicKey:                   publicKey,
-		Remove:                      true,
-		UpdateOnly:                  false,
-		PresharedKey:                nil,
 		Endpoint:                    &endPoint,
 		PersistentKeepaliveInterval: &keepAliveInterval,
-		ReplaceAllowedIPs:           true,
 		AllowedIPs:                  allowedIPs,
 	}
 	cfg := wgtypes.Config{
