@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 
+	"github.com/spf13/cobra"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -15,6 +17,26 @@ import (
 var ListenPort = 48574
 
 func main() {
+	cmd := &cobra.Command{
+		Use:  "alpha deviceName peerIPAddress peerPort peerPublicKey",
+		Args: cobra.ExactArgs(4),
+		Run: func(cmd *cobra.Command, args []string) {
+			deviceName := args[0]
+			peerIPAddress := args[1]
+			peerPort, err := strconv.Atoi(args[2])
+			if err != nil {
+				log.Fatal(err)
+			}
+			peerPublicKey := args[3]
+			run(deviceName, peerIPAddress, peerPort, peerPublicKey)
+		},
+	}
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(deviceName string, peerIPAddress string, peerPort int, peerPublicKey string) {
 	clt, err := wgctrl.New()
 	if err != nil {
 		log.Fatal(err)
@@ -22,9 +44,9 @@ func main() {
 	defer clt.Close()
 
 	peerInfo := peerInfo{
-		ipAddress:        "192.0.2.1",
-		port:             12345,
-		encodedPublicKey: "C9VaGN9qYYWPi4IKnbM9uv75E6iL9pBqY+i+XjUc13o=",
+		ipAddress:        peerIPAddress,
+		port:             peerPort,
+		encodedPublicKey: peerPublicKey,
 	}
 
 	configureDevice(clt, "wg0", peerInfo)
