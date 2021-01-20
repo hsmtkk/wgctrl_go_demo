@@ -61,7 +61,7 @@ func configureDevice(clt *wgctrl.Client, name string) {
 	allowedIPs := []net.IPNet{*subnet}
 	peer := wgtypes.PeerConfig{
 		PublicKey:                   publicKey,
-		Remove:                      false,
+		Remove:                      true,
 		UpdateOnly:                  false,
 		PresharedKey:                nil,
 		Endpoint:                    &endPoint,
