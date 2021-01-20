@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
@@ -40,11 +41,11 @@ func printDevice(dev *wgtypes.Device) {
 
 func configureDevice(clt *wgctrl.Client, name string) {
 	listenPort := 48574
-	privaetKey, err := wgtypes.NewKey([]byte("yF7wunIlxMPCeewVEGn0+oP0a5y5bgxQynF+irE4jm4="))
+	privaetKey, err := wgtypes.NewKey([]byte(decodeBase64("yF7wunIlxMPCeewVEGn0+oP0a5y5bgxQynF+irE4jm4=")))
 	if err != nil {
 		log.Fatal(err)
 	}
-	publicKey, err := wgtypes.NewKey([]byte("aLY4suj1vczi9WRjwr8dNqnxGvaeZ0VGznacKQ4E9UI="))
+	publicKey, err := wgtypes.NewKey([]byte(decodeBase64("aLY4suj1vczi9WRjwr8dNqnxGvaeZ0VGznacKQ4E9UI=")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,4 +79,12 @@ func configureDevice(clt *wgctrl.Client, name string) {
 	if err := clt.ConfigureDevice(name, cfg); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func decodeBase64(encoded string) []byte {
+	bs, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return bs
 }
