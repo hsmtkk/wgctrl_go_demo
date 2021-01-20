@@ -62,18 +62,17 @@ func configureDevice(clt *wgctrl.Client, name string) {
 		log.Fatal(err)
 	}
 	allowedIPs := []net.IPNet{*subnet}
-	peer := wgtypes.PeerConfig{
-		PublicKey:                   publicKey,
-		Endpoint:                    &endPoint,
-		PersistentKeepaliveInterval: &keepAliveInterval,
-		AllowedIPs:                  allowedIPs,
-	}
 	cfg := wgtypes.Config{
-		PrivateKey:   &privaetKey,
-		ListenPort:   &listenPort,
-		FirewallMark: nil,
-		ReplacePeers: true,
-		Peers:        []wgtypes.PeerConfig{peer},
+		PrivateKey: &privaetKey,
+		ListenPort: &listenPort,
+		Peers: []wgtypes.PeerConfig{
+			{
+				PublicKey:                   publicKey,
+				Endpoint:                    &endPoint,
+				PersistentKeepaliveInterval: &keepAliveInterval,
+				AllowedIPs:                  allowedIPs,
+			},
+		},
 	}
 	if err := clt.ConfigureDevice(name, cfg); err != nil {
 		log.Fatal(err)
