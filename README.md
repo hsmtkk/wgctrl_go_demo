@@ -1,2 +1,5 @@
-# wgctrl_go_demo
-wgctrl-go demo app
+reference
+
+<https://github.com/WireGuard/wgctrl-go>
+
+<https://godoc.org/golang.zx2c4.com/wireguard/wgctrl>
