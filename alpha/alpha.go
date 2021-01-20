@@ -18,8 +18,8 @@ var ListenPort = 48574
 
 func main() {
 	cmd := &cobra.Command{
-		Use:  "alpha deviceName peerIPAddress peerPort peerPublicKey",
-		Args: cobra.ExactArgs(4),
+		Use:  "alpha deviceName peerIPAddress peerPort peerPublicKey allowedIPs",
+		Args: cobra.ExactArgs(5),
 		Run: func(cmd *cobra.Command, args []string) {
 			deviceName := args[0]
 			peerIPAddress := args[1]
@@ -28,7 +28,8 @@ func main() {
 				log.Fatal(err)
 			}
 			peerPublicKey := args[3]
-			run(deviceName, peerIPAddress, peerPort, peerPublicKey)
+			allowedIPs := args[4]
+			run(deviceName, peerIPAddress, peerPort, peerPublicKey, allowedIPs)
 		},
 	}
 	if err := cmd.Execute(); err != nil {
@@ -36,7 +37,7 @@ func main() {
 	}
 }
 
-func run(deviceName string, peerIPAddress string, peerPort int, peerPublicKey string) {
+func run(deviceName string, peerIPAddress string, peerPort int, peerPublicKey string, allowedIPs string) {
 	clt, err := wgctrl.New()
 	if err != nil {
 		log.Fatal(err)
@@ -47,6 +48,7 @@ func run(deviceName string, peerIPAddress string, peerPort int, peerPublicKey st
 		ipAddress:        peerIPAddress,
 		port:             peerPort,
 		encodedPublicKey: peerPublicKey,
+		allowedIPs:       allowedIPs,
 	}
 
 	configureDevice(clt, "wg0", peerInfo)
@@ -77,6 +79,7 @@ type peerInfo struct {
 	ipAddress        string
 	port             int
 	encodedPublicKey string
+	allowedIPs       string
 }
 
 func configureDevice(clt *wgctrl.Client, deviceName string, peerInfo peerInfo) error {
@@ -88,12 +91,17 @@ func configureDevice(clt *wgctrl.Client, deviceName string, peerInfo peerInfo) e
 	if err != nil {
 		return fmt.Errorf("failed to generate private key; %w", err)
 	}
+	_, allowedIPs, err := net.ParseCIDR(peerInfo.allowedIPs)
+	if err != nil {
+		return fmt.Errorf("failed to parse allowed IPs; %w", err)
+	}
 	peer := wgtypes.PeerConfig{
 		PublicKey: peerPublicKey,
 		Endpoint: &net.UDPAddr{
 			IP:   net.ParseIP(peerInfo.ipAddress),
 			Port: peerInfo.port,
 		},
+		AllowedIPs: []net.IPNet{*allowedIPs},
 	}
 	config := wgtypes.Config{
 		PrivateKey: &privateKey,
