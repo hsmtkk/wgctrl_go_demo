@@ -1,15 +1,18 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
+
+// reference
+// https://github.com/WireGuard/wgctrl-go/blob/d44da33e9b6bfdab1fde5aa68f662e0e65788410/doc_test.go
+
+var ListenPort = 48574
 
 func main() {
 	clt, err := wgctrl.New()
@@ -18,8 +21,14 @@ func main() {
 	}
 	defer clt.Close()
 
-	listDevices(clt)
-	configureDevice(clt, "wg0")
+	peerInfo := peerInfo{
+		ipAddress:        "192.0.2.1",
+		port:             12345,
+		encodedPublicKey: "C9VaGN9qYYWPi4IKnbM9uv75E6iL9pBqY+i+XjUc13o=",
+	}
+
+	configureDevice(clt, "wg0", peerInfo)
+
 	listDevices(clt)
 }
 
@@ -42,47 +51,35 @@ func printDevice(dev *wgtypes.Device) {
 	fmt.Printf("Peers: %v\n", dev.Peers)
 }
 
-func configureDevice(clt *wgctrl.Client, name string) {
-	listenPort := 48574
-	privaetKey, err := wgtypes.NewKey([]byte(decodeBase64("yF7wunIlxMPCeewVEGn0+oP0a5y5bgxQynF+irE4jm4=")))
-	if err != nil {
-		log.Fatal(err)
-	}
-	publicKey, err := wgtypes.NewKey([]byte(decodeBase64("aLY4suj1vczi9WRjwr8dNqnxGvaeZ0VGznacKQ4E9UI=")))
-	if err != nil {
-		log.Fatal(err)
-	}
-	endPoint := net.UDPAddr{
-		IP:   net.ParseIP("192.168.11.21"),
-		Port: 39814,
-	}
-	keepAliveInterval := 25 * time.Second
-	_, subnet, err := net.ParseCIDR("10.0.0.2/32")
-	if err != nil {
-		log.Fatal(err)
-	}
-	allowedIPs := []net.IPNet{*subnet}
-	cfg := wgtypes.Config{
-		PrivateKey: &privaetKey,
-		ListenPort: &listenPort,
-		Peers: []wgtypes.PeerConfig{
-			{
-				PublicKey:                   publicKey,
-				Endpoint:                    &endPoint,
-				PersistentKeepaliveInterval: &keepAliveInterval,
-				AllowedIPs:                  allowedIPs,
-			},
-		},
-	}
-	if err := clt.ConfigureDevice(name, cfg); err != nil {
-		log.Fatal(err)
-	}
+type peerInfo struct {
+	ipAddress        string
+	port             int
+	encodedPublicKey string
 }
 
-func decodeBase64(encoded string) []byte {
-	bs, err := base64.StdEncoding.DecodeString(encoded)
+func configureDevice(clt *wgctrl.Client, deviceName string, peerInfo peerInfo) error {
+	peerPublicKey, err := wgtypes.ParseKey(peerInfo.encodedPublicKey)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to parse peer public key; %w", err)
 	}
-	return bs
+	privateKey, err := wgtypes.GeneratePrivateKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate private key; %w", err)
+	}
+	peer := wgtypes.PeerConfig{
+		PublicKey: peerPublicKey,
+		Endpoint: &net.UDPAddr{
+			IP:   net.ParseIP(peerInfo.ipAddress),
+			Port: peerInfo.port,
+		},
+	}
+	config := wgtypes.Config{
+		PrivateKey: &privateKey,
+		ListenPort: &ListenPort,
+		Peers:      []wgtypes.PeerConfig{peer},
+	}
+	if err := clt.ConfigureDevice(deviceName, config); err != nil {
+		return fmt.Errorf("failed to configure device; %w", err)
+	}
+	return nil
 }
