@@ -18,7 +18,7 @@ var ListenPort = 48574
 
 func main() {
 	cmd := &cobra.Command{
-		Use:  "alpha deviceName peerIPAddress peerPort peerPublicKey allowedIPs",
+		Use:  "wgctrl_go_demo deviceName peerIPAddress peerPort peerPublicKey allowedIPs",
 		Args: cobra.ExactArgs(5),
 		Run: func(cmd *cobra.Command, args []string) {
 			deviceName := args[0]
